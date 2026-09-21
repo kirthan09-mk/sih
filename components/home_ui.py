@@ -1,13 +1,13 @@
-"""
-Home page UI design – enterprise mining intelligence dashboard.
-Imported by pages/home.py
-"""
+"""Floating AI button + chat panel UI + Home page UI components."""
+import streamlit as st
 import random
 import folium
 from folium.plugins import Fullscreen, MarkerCluster
-import streamlit as st
 
 
+# ------------------------------------------------------------------
+# CSS
+# ------------------------------------------------------------------
 def inject_home_css():
     st.markdown("""
 <style>
@@ -170,24 +170,42 @@ def render_map_toolbar():
             st.rerun()
 
 
+# ------------------------------------------------------------------
+# UPDATED POPUP – now includes Coordinates
+# ------------------------------------------------------------------
 def _popup_html(mine):
+    lat, lon = mine["center"]
     return f"""
-    <div style="font-family:'Segoe UI',Arial,sans-serif; width:260px; padding:4px 2px;">
+    <div style="font-family:'Segoe UI',Arial,sans-serif; width:270px; padding:4px 2px;">
       <div style="font-size:14px; font-weight:700; color:#00695c; margin-bottom:6px;
                   border-bottom:2px solid #e0f2f1; padding-bottom:4px;">{mine['name']}</div>
       <div style="font-size:11px; color:#fff; background:#00695c; display:inline-block;
                   padding:2px 8px; border-radius:10px; margin-bottom:8px;">{mine['status'].upper()}</div>
       <table style="width:100%; font-size:12px; color:#37474f; border-collapse:collapse;">
-        <tr><td style="padding:3px 0; color:#78909c;">State</td>
-            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['state']}</td></tr>
-        <tr><td style="padding:3px 0; color:#78909c;">District</td>
-            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['district']}</td></tr>
-        <tr><td style="padding:3px 0; color:#78909c;">Type</td>
-            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['type']}</td></tr>
-        <tr><td style="padding:3px 0; color:#78909c;">Importance</td>
-            <td style="padding:3px 0; text-align:right; font-weight:700; color:#e65100;">{mine['importance']*100:.0f}%</td></tr>
-        <tr><td style="padding:3px 0; color:#78909c;">Area</td>
-            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['area_km2']} km²</td></tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">State</td>
+            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['state']}</td>
+        </tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">District</td>
+            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['district']}</td>
+        </tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">Type</td>
+            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['type']}</td>
+        </tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">Importance</td>
+            <td style="padding:3px 0; text-align:right; font-weight:700; color:#e65100;">{mine['importance']*100:.0f}%</td>
+        </tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">Area</td>
+            <td style="padding:3px 0; text-align:right; font-weight:600;">{mine['area_km2']} km²</td>
+        </tr>
+        <tr>
+            <td style="padding:3px 0; color:#78909c;">Coordinates</td>
+            <td style="padding:3px 0; text-align:right; font-weight:600;">{lat:.4f}° N, {lon:.4f}° E</td>
+        </tr>
       </table>
     </div>
     """
@@ -256,7 +274,6 @@ def build_map(mine_areas, all_targets):
             ),
         ).add_to(fg)
 
-        # Auto-open popup marker (reliable method)
         if open_mine == mine["name"]:
             folium.Marker(
                 location=mine["center"],
