@@ -13,7 +13,7 @@ from pages.home import render as render_home
 from pages.geological import render as render_geological
 from pages.production import render as render_production
 from pages.satellite import render as render_satellite
-from pages.prediction import render as render_prediction   # ← ADD THIS
+from pages.prediction import render as render_prediction
 
 
 def init_session_state():
@@ -55,9 +55,9 @@ def main():
         render_geological()
     elif page == "Production & Analytics":
         render_production()
-    elif page == "Satellite Intelligence":
+    elif page == "Geosatellite Analytics":
         render_satellite()
-    elif page == "Production Prediction":          # ← ADD THIS
+    elif page == "Production Prediction":
         render_prediction()
 
 

@@ -5,7 +5,7 @@ PAGES = [
     "Home",
     "Geological Insights",
     "Production & Analytics",
-    "Satellite Intelligence",
+    "Geosatellite Analytics",
     "Production Prediction",
 ]
 
@@ -21,7 +21,6 @@ def render_top_nav():
 
     if st.session_state.show_nav:
         st.markdown("---")
-        # Changed from 4 → number of pages so it never goes out of range
         cols = st.columns(len(PAGES))
         for i, p in enumerate(PAGES):
             if cols[i].button(p, use_container_width=True):

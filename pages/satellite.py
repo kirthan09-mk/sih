@@ -1,273 +1,250 @@
-
-
-"""Satellite Intelligence page."""
+"""Geosatellite Analytics – satellite params + mine depth / ore grade analytics."""
+import pandas as pd
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
 
-MINE_DATA = {
-    "balaghat": {
-        "name": "Balaghat",
-        "lat": 21.8167,
-        "lon": 80.1833,
-        "moisture": "19%",
-        "ndvi": "0.48",
-        "rainfall": "52 mm",
-        "temp": "31.8°C",
-        "polygon": [
-            [21.8240, 80.1720], [21.8265, 80.1815], [21.8230, 80.1935],
-            [21.8155, 80.1970], [21.8080, 80.1910], [21.8065, 80.1785], [21.8120, 80.1695],
-        ],
-        "drill_points": [
-            {"name": "Drill-BH-01", "lat": 21.8185, "lon": 80.1852, "depth": "125m", "status": "Completed"},
-            {"name": "Drill-BH-02", "lat": 21.8148, "lon": 80.1815, "depth": "98m", "status": "Completed"},
-            {"name": "Drill-BH-03", "lat": 21.8202, "lon": 80.1878, "depth": "152m", "status": "In Progress"},
-            {"name": "Drill-BH-04", "lat": 21.8155, "lon": 80.1790, "depth": "110m", "status": "Completed"},
-        ]
-    },
-    "ukwa": {
-        "name": "Ukwa",
-        "lat": 21.9750,
-        "lon": 80.4667,
-        "moisture": "18%",
-        "ndvi": "0.45",
-        "rainfall": "48 mm",
-        "temp": "32.1°C",
-        "polygon": [
-            [21.9825, 80.4550], [21.9850, 80.4640], [21.9810, 80.4765],
-            [21.9735, 80.4800], [21.9670, 80.4730], [21.9660, 80.4605], [21.9720, 80.4520],
-        ],
-        "drill_points": [
-            {"name": "Drill-UK-01", "lat": 21.9768, "lon": 80.4685, "depth": "85m", "status": "Completed"},
-            {"name": "Drill-UK-02", "lat": 21.9732, "lon": 80.4648, "depth": "112m", "status": "Completed"},
-            {"name": "Drill-UK-03", "lat": 21.9775, "lon": 80.4701, "depth": "95m", "status": "Planned"},
-        ]
-    },
-    "dongri": {
-        "name": "Dongri Buzurg",
-        "lat": 21.5500,
-        "lon": 79.8500,
-        "moisture": "17%",
-        "ndvi": "0.41",
-        "rainfall": "45 mm",
-        "temp": "33.0°C",
-        "polygon": [
-            [21.5570, 79.8390], [21.5595, 79.8485], [21.5555, 79.8610],
-            [21.5480, 79.8640], [21.5425, 79.8560], [21.5435, 79.8430], [21.5500, 79.8365],
-        ],
-        "drill_points": [
-            {"name": "Drill-DB-01", "lat": 21.5518, "lon": 79.8522, "depth": "72m", "status": "Completed"},
-            {"name": "Drill-DB-02", "lat": 21.5485, "lon": 79.8478, "depth": "88m", "status": "Completed"},
-        ]
-    },
-    "chikla": {
-        "name": "Chikla",
-        "lat": 21.5500,
-        "lon": 79.9500,
-        "moisture": "16%",
-        "ndvi": "0.39",
-        "rainfall": "43 mm",
-        "temp": "32.7°C",
-        "polygon": [
-            [21.5575, 79.9390], [21.5600, 79.9490], [21.5555, 79.9615],
-            [21.5480, 79.9640], [21.5420, 79.9555], [21.5440, 79.9420], [21.5505, 79.9365],
-        ],
-        "drill_points": [
-            {"name": "Drill-CH-01", "lat": 21.5515, "lon": 79.9520, "depth": "78m", "status": "Completed"},
-            {"name": "Drill-CH-02", "lat": 21.5482, "lon": 79.9475, "depth": "105m", "status": "In Progress"},
-            {"name": "Drill-CH-03", "lat": 21.5530, "lon": 79.9535, "depth": "91m", "status": "Completed"},
-        ]
-    },
-    "nagpur": {
-        "name": "Nagpur Region",
-        "lat": 21.1458,
-        "lon": 79.0882,
-        "moisture": "15%",
-        "ndvi": "0.37",
-        "rainfall": "40 mm",
-        "temp": "33.5°C",
-        "polygon": [
-            [21.1530, 79.0770], [21.1560, 79.0870], [21.1515, 79.0995],
-            [21.1430, 79.1020], [21.1375, 79.0930], [21.1390, 79.0800], [21.1455, 79.0745],
-        ],
-        "drill_points": [
-            {"name": "Drill-NG-01", "lat": 21.1480, "lon": 79.0905, "depth": "65m", "status": "Completed"},
-        ]
-    },
-    "sandur": {
-        "name": "Sandur",
-        "lat": 15.0860,
-        "lon": 76.5460,
-        "moisture": "14%",
-        "ndvi": "0.34",
-        "rainfall": "38 mm",
-        "temp": "34.2°C",
-        "polygon": [
-            [15.0935, 76.5350], [15.0960, 76.5450], [15.0915, 76.5575],
-            [15.0830, 76.5600], [15.0775, 76.5510], [15.0790, 76.5380], [15.0855, 76.5325],
-        ],
-        "drill_points": [
-            {"name": "Drill-SD-01", "lat": 15.0885, "lon": 76.5485, "depth": "55m", "status": "Completed"},
-            {"name": "Drill-SD-02", "lat": 15.0835, "lon": 76.5430, "depth": "70m", "status": "Planned"},
-        ]
-    },
-    "bonai": {
-        "name": "Bonai",
-        "lat": 21.8167,
-        "lon": 85.2333,
-        "moisture": "20%",
-        "ndvi": "0.51",
-        "rainfall": "55 mm",
-        "temp": "30.9°C",
-        "polygon": [
-            [21.8240, 85.2220], [21.8265, 85.2315], [21.8230, 85.2435],
-            [21.8155, 85.2470], [21.8080, 85.2410], [21.8065, 85.2285], [21.8120, 85.2195],
-        ],
-        "drill_points": [
-            {"name": "Drill-BN-01", "lat": 21.8185, "lon": 85.2355, "depth": "102m", "status": "Completed"},
-        ]
-    },
-    "joda": {
-        "name": "Joda",
-        "lat": 22.0167,
-        "lon": 85.4333,
-        "moisture": "19%",
-        "ndvi": "0.49",
-        "rainfall": "53 mm",
-        "temp": "31.2°C",
-        "polygon": [
-            [22.0240, 85.4220], [22.0265, 85.4315], [22.0230, 85.4435],
-            [22.0155, 85.4470], [22.0080, 85.4410], [22.0065, 85.4285], [22.0120, 85.4195],
-        ],
-        "drill_points": [
-            {"name": "Drill-JD-01", "lat": 22.0185, "lon": 85.4355, "depth": "88m", "status": "Completed"},
-            {"name": "Drill-JD-02", "lat": 22.0145, "lon": 85.4305, "depth": "115m", "status": "In Progress"},
-        ]
-    },
-    "srikakulam": {
-        "name": "Srikakulam",
-        "lat": 18.3000,
-        "lon": 83.9000,
-        "moisture": "21%",
-        "ndvi": "0.53",
-        "rainfall": "58 mm",
-        "temp": "30.5°C",
-        "polygon": [
-            [18.3075, 83.8890], [18.3100, 83.8985], [18.3055, 83.9110],
-            [18.2970, 83.9140], [18.2915, 83.9050], [18.2930, 83.8920], [18.2995, 83.8865],
-        ],
-        "drill_points": [
-            {"name": "Drill-SK-01", "lat": 18.3025, "lon": 83.9025, "depth": "60m", "status": "Completed"},
-        ]
-    },
-    "chhindwara": {
-        "name": "Chhindwara",
-        "lat": 22.0572,
-        "lon": 78.9389,
-        "moisture": "18%",
-        "ndvi": "0.44",
-        "rainfall": "47 mm",
-        "temp": "32.0°C",
-        "polygon": [
-            [22.0645, 78.9270], [22.0670, 78.9365], [22.0625, 78.9490],
-            [22.0540, 78.9520], [22.0485, 78.9430], [22.0500, 78.9300], [22.0565, 78.9245],
-        ],
-        "drill_points": [
-            {"name": "Drill-CW-01", "lat": 22.0590, "lon": 78.9410, "depth": "75m", "status": "Completed"},
-            {"name": "Drill-CW-02", "lat": 22.0550, "lon": 78.9365, "depth": "92m", "status": "Completed"},
-        ]
-    },
+# ─── Existing regional satellite data (unchanged) ───
+SOIL_DATA = {
+    "balaghat": {"moisture": "19%", "ndvi": "0.48", "rainfall": "52 mm", "temp": "31.8°C"},
+    "ukwa": {"moisture": "18%", "ndvi": "0.45", "rainfall": "48 mm", "temp": "32.1°C"},
+    "dongri": {"moisture": "17%", "ndvi": "0.41", "rainfall": "45 mm", "temp": "33.0°C"},
+    "chikla": {"moisture": "16%", "ndvi": "0.39", "rainfall": "43 mm", "temp": "32.7°C"},
+    "nagpur": {"moisture": "15%", "ndvi": "0.37", "rainfall": "40 mm", "temp": "33.5°C"},
+    "sandur": {"moisture": "14%", "ndvi": "0.34", "rainfall": "38 mm", "temp": "34.2°C"},
+    "bonai": {"moisture": "20%", "ndvi": "0.51", "rainfall": "55 mm", "temp": "30.9°C"},
+    "joda": {"moisture": "19%", "ndvi": "0.49", "rainfall": "53 mm", "temp": "31.2°C"},
+    "srikakulam": {"moisture": "21%", "ndvi": "0.53", "rainfall": "58 mm", "temp": "30.5°C"},
+    "chhindwara": {"moisture": "18%", "ndvi": "0.44", "rainfall": "47 mm", "temp": "32.0°C"},
 }
 
+MINE_LEVELS = [
+    {"Mine": "Chikla", "Depth (m)": -230, "Material / ore": "Manganiferous / ore zone", "Data source": "Assay data"},
+    {"Mine": "Chikla", "Depth (m)": -470, "Material / ore": "Manganiferous rock / ore body", "Data source": "Assay data"},
+    {"Mine": "Kandri", "Depth (m)": -350, "Material / ore": "Ore body", "Data source": "Assay data"},
+    {"Mine": "Munsar", "Depth (m)": 70, "Material / ore": "Geological / working level", "Data source": "Assay data"},
+    {"Mine": "Munsar", "Depth (m)": -30, "Material / ore": "Geological / working level", "Data source": "Assay data"},
+    {"Mine": "Munsar", "Depth (m)": -230, "Material / ore": "Geological / working level", "Data source": "Assay data"},
+    {"Mine": "Balaghat", "Depth (m)": -750, "Material / ore": "Underground exploration / workings", "Data source": "Drill / core assay"},
+]
 
-def render():
-    st.markdown("## 🛰️ Satellite Intelligence")
-    st.markdown("Search a mine → details appear on the left + Satellite map on the right")
+DEPTH_PROFILE = [
+    {"Depth from (m)": 0, "Depth to (m)": 1, "Materials / minerals": "Soil, topsoil, organic / weathered material", "Mn relevance": "Surface indicator"},
+    {"Depth from (m)": 1, "Depth to (m)": 1.5, "Materials / minerals": "Manganese-bearing material (some Balaghat areas)", "Mn relevance": "Mn mineralization (local)"},
+    {"Depth from (m)": 1.5, "Depth to (m)": 5, "Materials / minerals": "Laterite, limonite / goethite, weathered rock, soil", "Mn relevance": "Possible Fe–Mn indicator"},
+    {"Depth from (m)": 5, "Depth to (m)": 10, "Materials / minerals": "Weathered rock, phyllite / schist, quartz-bearing material", "Mn relevance": "Host-rock information"},
+    {"Depth from (m)": 10, "Depth to (m)": 25, "Materials / minerals": "Phyllite, quartz-mica schist, gneiss, Mn bands where present", "Mn relevance": "Potential Mn zone"},
+    {"Depth from (m)": 25, "Depth to (m)": 50, "Materials / minerals": "Host rocks + mineralized bands / ore (structure-dependent)", "Mn relevance": "Potential Mn zone"},
+    {"Depth from (m)": 50, "Depth to (m)": 100, "Materials / minerals": "Host rock, quartz-bearing rock, Mn ore / bands (UG deposits)", "Mn relevance": "Requires drill / core assay"},
+    {"Depth from (m)": 100, "Depth to (m)": 150, "Materials / minerals": "Host rock + possible ore body", "Mn relevance": "Requires drill / core assay"},
+    {"Depth from (m)": 150, "Depth to (m)": 250, "Materials / minerals": "Underground host rock + ore zones (suitable deposits)", "Mn relevance": "Requires drill / core assay"},
+    {"Depth from (m)": 250, "Depth to (m)": 350, "Materials / minerals": "Deeper UG workings / host rock (some MOIL mines)", "Mn relevance": "Mine-specific data"},
+    {"Depth from (m)": 350, "Depth to (m)": 500, "Materials / minerals": "Deep underground geological units", "Mn relevance": "Mine-specific data"},
+    {"Depth from (m)": 500, "Depth to (m)": 750, "Materials / minerals": "Very deep UG rock (Balaghat shaft scale)", "Mn relevance": "Not continuous Mn throughout"},
+]
 
-    search = st.text_input(
-        "Search Mine / Area (e.g. Balaghat, Ukwa, Dongri, Chikla...)",
-        placeholder="Type mine name here..."
-    )
+ORE_GRADES = [
+    {"Mine / source": "Balaghat", "Ore type": "Ferro-grade jigged fines", "Mn %": 37, "P %": 0.112, "SiO₂ %": 26, "Fe %": 6.5},
+    {"Mine / source": "Kandri", "Ore type": "1st grade lump", "Mn %": 46, "P %": 0.22, "SiO₂ %": 17, "Fe %": 5.2},
+    {"Mine / source": "Dongri Buzurg", "Ore type": "Fines", "Mn %": 28, "P %": 0.20, "SiO₂ %": 26, "Fe %": 12},
+    {"Mine / source": "Dongri Buzurg", "Ore type": "Chemical grade", "Mn %": 39, "P %": 0.20, "SiO₂ %": 18, "Fe %": 10},
+    {"Mine / source": "—", "Ore type": "Silico-manganese grade", "Mn %": 25, "P %": 0.28, "SiO₂ %": 36, "Fe %": 8.5},
+    {"Mine / source": "Tirodi", "Ore type": "SM grade small", "Mn %": 25, "P %": 0.35, "SiO₂ %": 45, "Fe %": 7.5},
+    {"Mine / source": "Sitapatore", "Ore type": "25% SM grade", "Mn %": 25, "P %": 0.40, "SiO₂ %": 38, "Fe %": 9},
+]
+
+
+def _soil_dataframe() -> pd.DataFrame:
+    rows = []
+    for name, v in SOIL_DATA.items():
+        rows.append({
+            "Region": name.title(),
+            "Soil Moisture %": float(v["moisture"].replace("%", "")),
+            "NDVI": float(v["ndvi"]),
+            "Rainfall (mm)": float(v["rainfall"].replace(" mm", "")),
+            "Land Temp (°C)": float(v["temp"].replace("°C", "")),
+        })
+    return pd.DataFrame(rows).sort_values("Region")
+
+
+def _render_existing_satellite_section():
+    st.markdown("### Regional satellite parameters")
+    st.markdown("Search any mine to see soil moisture and related data for that area.")
+
+    search = st.text_input("Search Mine / Area (e.g. Balaghat, Dongri, Srikakulam, Sandur)")
 
     if search:
         key = search.lower().strip()
-        found = None
-
-        for k, v in MINE_DATA.items():
+        found = False
+        for k, v in SOIL_DATA.items():
             if k in key or key in k:
-                found = v
+                st.success(f"Data for **{search.title()}** region")
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Soil Moisture", v["moisture"])
+                c2.metric("NDVI", v["ndvi"])
+                c3.metric("7-day Rainfall", v["rainfall"])
+                c4.metric("Land Temp", v["temp"])
+                found = True
                 break
-
-        if found:
-            st.success(f"**{found['name']} Mine** – Live Satellite Intelligence")
-
-            # ========== SIDE BY SIDE LAYOUT ==========
-            col1, col2 = st.columns([1, 2.2])   # Left: details | Right: map
-
-            with col1:
-                st.markdown("### 📊 Mine Details")
-                st.markdown(f"""
-                | Parameter              | Value              |
-                |------------------------|--------------------|
-                | **Soil Moisture**      | {found['moisture']} |
-                | **NDVI**               | {found['ndvi']}    |
-                | **7-day Rainfall**     | {found['rainfall']} |
-                | **Land Temperature**   | {found['temp']}    |
-                """)
-
-                st.markdown("---")
-                st.markdown("### 📍 Drill Points")
-                for point in found["drill_points"]:
-                    status_color = "🟢" if point["status"] == "Completed" else "🟠" if point["status"] == "In Progress" else "🔵"
-                    st.markdown(f"{status_color} **{point['name']}**  \nDepth: {point['depth']}  \nStatus: {point['status']}")
-
-            with col2:
-                st.markdown(f"### 🛰️ Satellite View – {found['name']}")
-
-                m = folium.Map(
-                    location=[found["lat"], found["lon"]],
-                    zoom_start=14,
-                    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-                    attr="Esri World Imagery"
-                )
-
-                # Realistic polygon
-                folium.Polygon(
-                    locations=found["polygon"],
-                    color="#FFD700",
-                    weight=3,
-                    fill=True,
-                    fill_color="#FFD700",
-                    fill_opacity=0.30,
-                    tooltip=f"{found['name']} Mine Boundary"
-                ).add_to(m)
-
-                # Center marker
-                folium.Marker(
-                    location=[found["lat"], found["lon"]],
-                    tooltip=f"{found['name']} Mine Center",
-                    icon=folium.Icon(color="red", icon="industry", prefix="fa")
-                ).add_to(m)
-
-                # Drill points
-                for point in found["drill_points"]:
-                    color = "green" if point["status"] == "Completed" else "orange" if point["status"] == "In Progress" else "blue"
-                    folium.CircleMarker(
-                        location=[point["lat"], point["lon"]],
-                        radius=10,
-                        color=color,
-                        fill=True,
-                        fill_color=color,
-                        fill_opacity=0.95,
-                        popup=f"<b>{point['name']}</b><br>Depth: {point['depth']}<br>Status: {point['status']}",
-                        tooltip=f"{point['name']} | {point['depth']}"
-                    ).add_to(m)
-
-                st_folium(m, width=700, height=520, returned_objects=[])
-
-                st.caption("Gold polygon = Mine boundary • Red marker = Center • Colored circles = Drill points")
-
-        else:
-            st.warning("No matching mine found. Try: Balaghat, Ukwa, Dongri, Chikla, Sandur, Bonai, Joda...")
+        if not found:
+            st.warning(
+                "No matching mine found. Try: Balaghat, Dongri, Ukwa, Sandur, "
+                "Srikakulam, Bonai, Joda..."
+            )
     else:
-        st.info("Type a mine name above. Details will appear on the left side of the map.")
+        st.info("Type a mine name above to see detailed satellite parameters for that area.")
+
+    st.markdown("#### Regional comparison")
+    sdf = _soil_dataframe()
+    tab1, tab2, tab3 = st.tabs(["Soil Moisture & NDVI", "Rainfall & Temperature", "Data table"])
+
+    with tab1:
+        a, b = st.columns(2)
+        with a:
+            st.markdown("##### Soil Moisture (%)")
+            st.bar_chart(sdf.set_index("Region")[["Soil Moisture %"]], height=280, color="#1565c0")
+        with b:
+            st.markdown("##### NDVI")
+            st.bar_chart(sdf.set_index("Region")[["NDVI"]], height=280, color="#2e7d32")
+
+    with tab2:
+        a, b = st.columns(2)
+        with a:
+            st.markdown("##### 7-day Rainfall (mm)")
+            st.bar_chart(sdf.set_index("Region")[["Rainfall (mm)"]], height=280, color="#00838f")
+        with b:
+            st.markdown("##### Land Temperature (°C)")
+            st.bar_chart(sdf.set_index("Region")[["Land Temp (°C)"]], height=280, color="#e65100")
+
+    with tab3:
+        st.dataframe(
+            sdf.style.format({
+                "Soil Moisture %": "{:.0f}",
+                "NDVI": "{:.2f}",
+                "Rainfall (mm)": "{:.0f}",
+                "Land Temp (°C)": "{:.1f}",
+            }),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
+def _render_mine_depth_section():
+    st.markdown("### Mine working levels & depth")
+    st.caption("Documented underground / working levels (assay / drill context).")
+
+    levels = pd.DataFrame(MINE_LEVELS)
+    chart_df = levels.copy()
+    chart_df["Depth magnitude (m)"] = chart_df["Depth (m)"].abs()
+    chart_df["Label"] = chart_df["Mine"] + " (" + chart_df["Depth (m)"].astype(str) + " m)"
+
+    c1, c2 = st.columns([1.35, 1])
+    with c1:
+        st.markdown("##### Working depth by mine level")
+        st.bar_chart(chart_df.set_index("Label")[["Depth magnitude (m)"]], height=320, color="#00695c")
+        st.caption("Bar length = |depth|. Munsar +70 m is above reference; others below surface.")
+    with c2:
+        st.markdown("##### Level register")
+        st.dataframe(levels, use_container_width=True, hide_index=True)
+
+    span = levels.groupby("Mine")["Depth (m)"].agg(min_depth="min", max_depth="max").reset_index()
+    span["Vertical span (m)"] = (span["max_depth"] - span["min_depth"]).abs()
+    st.markdown("##### Vertical span per mine")
+    st.bar_chart(span.set_index("Mine")[["Vertical span (m)"]], height=240, color="#ff6d00")
+
+
+def _render_depth_profile_section():
+    st.markdown("### Depth vs materials / minerals profile")
+    st.caption("Generalised profile 0–750 m. Deeper bands need drill/core assay — not continuous Mn ore.")
+
+    profile = pd.DataFrame(DEPTH_PROFILE)
+    profile["Layer thickness (m)"] = profile["Depth to (m)"] - profile["Depth from (m)"]
+    profile["Layer"] = profile["Depth from (m)"].astype(str) + "–" + profile["Depth to (m)"].astype(str) + " m"
+
+    rel_map = {
+        "Surface indicator": 1,
+        "Mn mineralization (local)": 5,
+        "Possible Fe–Mn indicator": 3,
+        "Host-rock information": 2,
+        "Potential Mn zone": 4,
+        "Requires drill / core assay": 3,
+        "Mine-specific data": 2,
+        "Not continuous Mn throughout": 1,
+    }
+    profile["Relevance index"] = profile["Mn relevance"].map(rel_map).fillna(1)
+
+    t1, t2 = st.tabs(["Layer thickness by depth band", "Mn relevance index by depth"])
+    with t1:
+        st.bar_chart(profile.set_index("Layer")[["Layer thickness (m)"]], height=340, color="#1565c0")
+        st.caption("Thicker bars = wider depth interval, not higher ore grade.")
+    with t2:
+        st.bar_chart(profile.set_index("Layer")[["Relevance index"]], height=340, color="#2e7d32")
+        st.caption("Visual rank of stated Mn relevance (not a measured grade).")
+
+    st.markdown("##### Full depth–material table")
+    st.dataframe(
+        profile[["Depth from (m)", "Depth to (m)", "Materials / minerals", "Mn relevance", "Layer thickness (m)"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def _render_ore_grade_section():
+    st.markdown("### Ore grade composition")
+    st.caption("Sample grade snapshots (Mn, P, SiO₂, Fe) by mine / product type.")
+
+    grades = pd.DataFrame(ORE_GRADES)
+    grades["Label"] = grades["Mine / source"] + " – " + grades["Ore type"]
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Highest Mn %", f"{grades['Mn %'].max()}%", grades.loc[grades["Mn %"].idxmax(), "Mine / source"])
+    k2.metric("Lowest Mn %", f"{grades['Mn %'].min()}%")
+    k3.metric("Avg Mn %", f"{grades['Mn %'].mean():.1f}%")
+    k4.metric("Samples", str(len(grades)))
+
+    g1, g2 = st.columns(2)
+    with g1:
+        st.markdown("##### Mn % by product")
+        st.bar_chart(grades.set_index("Label")[["Mn %"]], height=320, color="#00695c")
+    with g2:
+        st.markdown("##### Fe % by product")
+        st.bar_chart(grades.set_index("Label")[["Fe %"]], height=320, color="#e65100")
+
+    g3, g4 = st.columns(2)
+    with g3:
+        st.markdown("##### SiO₂ % by product")
+        st.bar_chart(grades.set_index("Label")[["SiO₂ %"]], height=280, color="#1565c0")
+    with g4:
+        st.markdown("##### P % by product")
+        st.bar_chart(grades.set_index("Label")[["P %"]], height=280, color="#f9a825")
+
+    st.markdown("##### Multi-element comparison (Mn · Fe · SiO₂)")
+    st.bar_chart(grades.set_index("Label")[["Mn %", "Fe %", "SiO₂ %"]], height=340)
+
+    st.markdown("##### Grade register")
+    st.dataframe(
+        grades[["Mine / source", "Ore type", "Mn %", "P %", "SiO₂ %", "Fe %"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def render():
+    st.markdown("## Geosatellite Analytics")
+    st.markdown(
+        "Satellite indicators for surface context, plus **mine depth levels**, "
+        "**depth–material profiles**, and **ore grade composition**."
+    )
+
+    tabs = st.tabs([
+        "📡 Satellite parameters",
+        "⛏️ Mine depths",
+        "🪨 Depth–mineral profile",
+        "📊 Ore grades",
+    ])
+    with tabs[0]:
+        _render_existing_satellite_section()
+    with tabs[1]:
+        _render_mine_depth_section()
+    with tabs[2]:
+        _render_depth_profile_section()
+    with tabs[3]:
+        _render_ore_grade_section()
